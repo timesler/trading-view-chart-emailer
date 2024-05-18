@@ -1,0 +1,7 @@
+functions-framework==3.*
+pillow
+selenium
+sendgrid
+webdriver_manager
+chromedriver_py
+get-chrome-driver
