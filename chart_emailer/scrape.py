@@ -21,13 +21,17 @@ class WebDriverManager:
     def save_tradingview_chart_as_image(self, url, output_filename):
         if "economic-calendar" in url:
             class_name = "fxs_c_calendar_wrapper"
+        elif "tv_guide" in url:
+            class_name = "draggable"
         else:
             class_name = "layout__area--center"
         self.driver.get(url)
         wait = WebDriverWait(self.driver, 5)
-        time.sleep(5)  # Let the page load completely
         # Ensure the chart element is loaded
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, class_name)))
+        wait.until(
+            EC.presence_of_element_located((By.CLASS_NAME, class_name)),
+            f"Timeed out waiting for {class_name} class",
+        )
         # Locate the chart element and take a screenshot
         chart_element = self.driver.find_element(By.CLASS_NAME, class_name)
         chart_element.screenshot(str(output_filename))
