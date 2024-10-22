@@ -16,25 +16,33 @@ class WebDriverManager:
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument(f"--window-size={width}x{height}")
+        chrome_options.add_argument("--disable-3d-apis")
         self.driver = webdriver.Chrome(options=chrome_options)
+        self.driver.set_window_size(width, height)
 
     def save_tradingview_chart_as_image(self, url, output_filename):
+        self.driver.get(url)
         if "economic-calendar" in url:
             class_name = "fxs_c_calendar_wrapper"
         elif "tv_guide" in url:
             class_name = "draggable"
+        elif "countryeconomy" in url:
+            class_name = "table-responsive"
         else:
             class_name = "layout__area--center"
-        self.driver.get(url)
-        wait = WebDriverWait(self.driver, 5)
-        # Ensure the chart element is loaded
-        wait.until(
-            EC.presence_of_element_located((By.CLASS_NAME, class_name)),
-            f"Timeed out waiting for {class_name} class",
-        )
-        # Locate the chart element and take a screenshot
-        chart_element = self.driver.find_element(By.CLASS_NAME, class_name)
-        chart_element.screenshot(str(output_filename))
+        if class_name:
+            wait = WebDriverWait(self.driver, 10)
+            # Ensure the chart element is loaded
+            wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, class_name)),
+                f"Timeed out waiting for {class_name} class",
+            )
+            # Locate the chart element and take a screenshot
+            chart_element = self.driver.find_element(By.CLASS_NAME, class_name)
+            chart_element.screenshot(str(output_filename))
+        else:
+            time.sleep(10)
+            self.driver.save_screenshot(str(output_filename))
 
     def close_driver(self):
         self.driver.quit()
