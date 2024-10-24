@@ -46,17 +46,18 @@ def encode_file_to_base64(filename):
     return encoded
 
 
-def create_attachment(manager, url, filename, save_path):
+def create_attachment(manager, url, filename, save_path, width=None, height=None):
     print(f"Saving {url} to {filename}")
-    manager.save_tradingview_chart_as_image(url, save_path / filename)
+    result = manager.save_tradingview_chart_as_image(url, save_path / filename, width=width, height=height)
 
-    print(f"Preparing attachment for {save_path / filename}")
-    attachment = Attachment()
-    attachment.file_content = FileContent(encode_file_to_base64(save_path / filename))
-    attachment.file_type = FileType("image/png")
-    attachment.file_name = FileName(filename)
-    attachment.disposition = Disposition('attachment')
-    return attachment
+    if result:
+        print(f"Preparing attachment for {save_path / filename}")
+        attachment = Attachment()
+        attachment.file_content = FileContent(encode_file_to_base64(save_path / filename))
+        attachment.file_type = FileType("image/png")
+        attachment.file_name = FileName(filename)
+        attachment.disposition = Disposition("attachment")
+        return attachment
 
 
 def send_email(_):
@@ -75,13 +76,14 @@ def send_email(_):
     for path in save_path.glob("*.png"):
         print(f"Deleting {path}")
         path.unlink()
-    
+
     print("Scraping URLs for charts and attaching to email")
     attachments = []
     manager = WebDriverManager()
     for url, filename in URLS_FILES:
-        attachments.append(create_attachment(manager, url, filename, save_path))
-    manager.close_driver()
+        attachment = create_attachment(manager, url, filename, save_path)
+        if attachment:
+            attachments.append(attachment)
 
     print("Composing email")
     email_content = "Hey bro, here's today's charts"
@@ -105,22 +107,29 @@ def send_email(_):
     except HTTPError as e:
         print(f"Sending email failed with error: {e}")
         print(e.message)
-    
+
     attachments = []
     print("Attaching economic calendar")
-    manager = WebDriverManager(height=1080 * 4)
-    attachments.append(create_attachment(manager, CALENDAR_URL, CALENDAR_FILENAME, save_path))
-    manager.close_driver()
+    attachment = create_attachment(manager, CALENDAR_URL, CALENDAR_FILENAME, save_path, height=1080 * 4)
+    if attachment:
+        attachments.append(attachment)
 
     print("Attaching TV guide")
-    manager = WebDriverManager(width=1920 * 2, height=1080 * 7)
-    attachments.append(create_attachment(manager, TV_GUIDE_URL, TV_GUIDE_FILENAME, save_path))
-    manager.close_driver()
+    attachment = create_attachment(
+        manager,
+        TV_GUIDE_URL,
+        TV_GUIDE_FILENAME,
+        save_path,
+        width=1920 * 2,
+        height=1080 * 7,
+    )
+    if attachment:
+        attachments.append(attachment)
 
     print("Attaching Bloomberg stock overview")
-    manager = WebDriverManager(height=1080 * 2)
-    attachments.append(create_attachment(manager, BLOOMBERG_URL, BLOOMBERG_FILENAME, save_path))
-    manager.close_driver()
+    attachment = create_attachment(manager, BLOOMBERG_URL, BLOOMBERG_FILENAME, save_path, height=1080 * 2)
+    if attachment:
+        attachments.append(attachment)
 
     print("Composing email")
     email_content = "Hey bro, here's the rest of today's attachments"
@@ -145,6 +154,8 @@ def send_email(_):
     except HTTPError as e:
         print(f"Sending email failed with error: {e}")
         print(e.message)
+
+    manager.close_driver()
 
 
 if __name__ == "__main__":
