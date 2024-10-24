@@ -150,7 +150,7 @@ def send_email(_):
         print(f"{response.status_code = }")
         print(f"{response.body = }")
         print(f"{response.headers = }")
-        return response.status_code
+        return {"status": response.status_code}
     except HTTPError as e:
         print(f"Sending email failed with error: {e}")
         print(e.message)
